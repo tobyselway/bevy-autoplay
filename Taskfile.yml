@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+  run:
+    desc: Run the game in dev mode
+    cmds:
+      - cargo run --features bevy/dynamic_linking
+    silent: true
+  run-release:
+    desc: Run the game in release mode
+    cmds:
+      - cargo run --release
+    silent: true
+  build-dev:
+    desc: Build the game in dev mode
+    cmds:
+      - cargo build --features bevy/dynamic_linking
+    silent: true
+  build-release:
+    desc: Build the game in release mode
+    cmds:
+      - cargo build --release
+    silent: true
