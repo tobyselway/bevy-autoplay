@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.13.2"
+bevy = { version = "0.13.2", features = ["serialize"] }
+rmp-serde = "1.3.0"
+serde = "1.0.203"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

@@ -1,10 +1,31 @@
-use std::{collections::VecDeque, time::Duration};
+use std::{collections::VecDeque, error, fs::File, hash::Hash, io::BufReader, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
+use rmp_serde::Serializer;
+use serde::{Deserialize, Serialize};
+use std::io::prelude::*;
 
+#[derive(Debug, Serialize, Deserialize)]
+struct KeyInput {
+    pub pressed: HashSet<KeyCode>,
+    pub just_pressed: HashSet<KeyCode>,
+    pub just_released: HashSet<KeyCode>,
+}
+
+impl From<ButtonInput<KeyCode>> for KeyInput {
+    fn from(value: ButtonInput<KeyCode>) -> Self {
+        KeyInput {
+            pressed: HashSet::from_iter(value.get_pressed().cloned()),
+            just_pressed: HashSet::from_iter(value.get_just_pressed().cloned()),
+            just_released: HashSet::from_iter(value.get_just_released().cloned()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct InputEvent {
     timestamp: Duration,
-    event: ButtonInput<KeyCode>,
+    event: KeyInput,
 }
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -15,16 +36,36 @@ enum SessionState {
     Recording,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
+struct StartTime(Duration);
+
+#[derive(Resource, Default, Serialize, Deserialize)]
 struct PlaySession {
     events: VecDeque<InputEvent>,
-    start_time: Duration,
+}
+
+impl PlaySession {
+    fn save(&self, filename: &str) -> Result<(), Box<dyn error::Error>> {
+        let mut buf = Vec::new();
+        self.serialize(&mut Serializer::new(&mut buf))?;
+        let mut file = File::create(filename)?;
+        file.write_all(&buf)?;
+        Ok(())
+    }
+
+    fn load(&mut self, filename: &str) -> Result<(), Box<dyn error::Error>> {
+        let file = File::open(filename)?;
+        let reader = BufReader::new(file);
+        *self = rmp_serde::from_read(reader)?;
+        Ok(())
+    }
 }
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_state(SessionState::Stopped)
+        .insert_resource(StartTime(Duration::new(0, 0)))
         .insert_resource(PlaySession {
             ..Default::default()
         })
@@ -46,17 +87,28 @@ fn main() {
         .run();
 }
 
-fn start_recording(mut session: ResMut<PlaySession>, time: Res<Time<Virtual>>) {
-    session.start_time = time.elapsed();
+fn start_recording(
+    mut session: ResMut<PlaySession>,
+    time: Res<Time<Virtual>>,
+    mut start_time: ResMut<StartTime>,
+) {
+    session.events.clear();
+    start_time.0 = time.elapsed();
     info!("Started recording");
 }
 
-fn stop_recording() {
+fn stop_recording(session: Res<PlaySession>) {
     info!("Stopped recording");
+    session.save("recording1.gsi").unwrap();
 }
 
-fn start_playing(mut session: ResMut<PlaySession>, time: Res<Time<Virtual>>) {
-    session.start_time = time.elapsed();
+fn start_playing(
+    mut session: ResMut<PlaySession>,
+    time: Res<Time<Virtual>>,
+    mut start_time: ResMut<StartTime>,
+) {
+    session.load("recording1.gsi").unwrap();
+    start_time.0 = time.elapsed();
     info!("Started playing");
 }
 
@@ -117,6 +169,7 @@ fn record(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut session: ResMut<PlaySession>,
     time: Res<Time<Virtual>>,
+    start_time: Res<StartTime>,
 ) {
     let just_pressed = keyboard_input.get_just_pressed();
     let just_released = keyboard_input.get_just_released();
@@ -133,10 +186,9 @@ fn record(
         return;
     }
 
-    let start_time = session.start_time;
     session.events.push_back(InputEvent {
-        event: keyboard_input.clone(),
-        timestamp: time.elapsed() - start_time,
+        event: keyboard_input.clone().into(),
+        timestamp: time.elapsed() - start_time.0,
     });
 }
 
@@ -145,15 +197,16 @@ fn playback(
     mut session: ResMut<PlaySession>,
     time: Res<Time<Virtual>>,
     mut next_session_state: ResMut<NextState<SessionState>>,
+    start_time: Res<StartTime>,
 ) {
     if let Some(entry) = session.events.front() {
-        if time.elapsed() < (entry.timestamp + session.start_time) {
+        if time.elapsed() < (entry.timestamp + start_time.0) {
             return;
         }
-        for pressed in entry.event.get_just_pressed() {
+        for pressed in entry.event.just_pressed.iter() {
             keyboard_input.press(*pressed);
         }
-        for released in entry.event.get_just_released() {
+        for released in entry.event.just_released.iter() {
             keyboard_input.release(*released);
         }
         session.events.pop_front();
