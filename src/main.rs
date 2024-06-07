@@ -7,17 +7,16 @@ struct InputEvent {
     event: ButtonInput<KeyCode>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
-enum SessionMode {
+#[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
+enum SessionState {
     #[default]
-    Stop,
-    Play,
-    Record,
+    Stopped,
+    Playing,
+    Recording,
 }
 
 #[derive(Resource, Default)]
 struct PlaySession {
-    mode: SessionMode,
     events: VecDeque<InputEvent>,
     start_time: Duration,
 }
@@ -25,84 +24,74 @@ struct PlaySession {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_state(SessionState::Stopped)
         .insert_resource(PlaySession {
-            mode: SessionMode::Stop,
             ..Default::default()
         })
         .add_systems(
             Update,
             (
-                record_inputs.run_if(session_is_recording),
-                playback_inputs.run_if(session_is_playing),
+                record.run_if(in_state(SessionState::Recording)),
+                playback.run_if(in_state(SessionState::Playing)),
                 log_inputs,
             )
                 .chain(),
         )
+        .add_systems(OnEnter(SessionState::Recording), start_recording)
+        .add_systems(OnExit(SessionState::Recording), stop_recording)
+        .add_systems(OnEnter(SessionState::Playing), start_playing)
+        .add_systems(OnExit(SessionState::Playing), stop_playing)
         .add_systems(Update, toggle_record)
         .add_systems(Update, toggle_play)
         .run();
 }
 
-fn session_is_playing(session: Res<PlaySession>) -> bool {
-    session.mode == SessionMode::Play
+fn start_recording(mut session: ResMut<PlaySession>, time: Res<Time<Virtual>>) {
+    session.start_time = time.elapsed();
+    info!("Started recording");
 }
 
-fn session_is_recording(session: Res<PlaySession>) -> bool {
-    session.mode == SessionMode::Record
+fn stop_recording() {
+    info!("Stopped recording");
+}
+
+fn start_playing(mut session: ResMut<PlaySession>, time: Res<Time<Virtual>>) {
+    session.start_time = time.elapsed();
+    info!("Started playing");
+}
+
+fn stop_playing() {
+    info!("Stopped playing");
 }
 
 fn toggle_record(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut session: ResMut<PlaySession>,
-    time: Res<Time<Virtual>>,
+    session_state: Res<State<SessionState>>,
+    mut next_session_state: ResMut<NextState<SessionState>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::F12) {
         return;
     }
-    session.mode = match session.mode {
-        SessionMode::Stop => {
-            session.start_time = time.elapsed();
-            info!("Started recording");
-            SessionMode::Record
-        }
-        SessionMode::Record => {
-            info!("Stopped recording");
-            SessionMode::Stop
-        }
-        SessionMode::Play => {
-            info!("Stopped playing");
-            session.start_time = time.elapsed();
-            info!("Started recording");
-            SessionMode::Record
-        }
-    };
+    next_session_state.set(match *session_state.get() {
+        SessionState::Playing => SessionState::Recording,
+        SessionState::Stopped => SessionState::Recording,
+        SessionState::Recording => SessionState::Stopped,
+    });
 }
 
 fn toggle_play(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut session: ResMut<PlaySession>,
-    time: Res<Time<Virtual>>,
+    session_state: Res<State<SessionState>>,
+    mut next_session_state: ResMut<NextState<SessionState>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::F11) {
         return;
     }
-    session.mode = match session.mode {
-        SessionMode::Stop => {
-            session.start_time = time.elapsed();
-            info!("Started playing");
-            SessionMode::Play
-        }
-        SessionMode::Record => {
-            info!("Stopped recording");
-            session.start_time = time.elapsed();
-            info!("Started playing");
-            SessionMode::Play
-        }
-        SessionMode::Play => {
-            info!("Stopped playing");
-            SessionMode::Stop
-        }
-    };
+    next_session_state.set(match *session_state.get() {
+        SessionState::Recording => SessionState::Playing,
+        SessionState::Stopped => SessionState::Playing,
+        SessionState::Playing => SessionState::Stopped,
+    });
 }
 
 fn log_inputs(keyboard_input: Res<ButtonInput<KeyCode>>) {
@@ -124,7 +113,7 @@ fn log_inputs(keyboard_input: Res<ButtonInput<KeyCode>>) {
     info!("Keyboard input: {:?}", keyboard_input);
 }
 
-fn record_inputs(
+fn record(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut session: ResMut<PlaySession>,
     time: Res<Time<Virtual>>,
@@ -151,10 +140,11 @@ fn record_inputs(
     });
 }
 
-fn playback_inputs(
+fn playback(
     mut keyboard_input: ResMut<ButtonInput<KeyCode>>,
     mut session: ResMut<PlaySession>,
     time: Res<Time<Virtual>>,
+    mut next_session_state: ResMut<NextState<SessionState>>,
 ) {
     if let Some(entry) = session.events.front() {
         if time.elapsed() < (entry.timestamp + session.start_time) {
@@ -168,7 +158,6 @@ fn playback_inputs(
         }
         session.events.pop_front();
     } else {
-        session.mode = SessionMode::Stop;
-        info!("Stopped playing");
+        next_session_state.set(SessionState::Stopped);
     }
 }
