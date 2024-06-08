@@ -302,6 +302,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-autoplay"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "chrono",
+ "rmp-serde",
+ "serde",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1045,16 +1055,6 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "winit",
-]
-
-[[package]]
-name = "bevytest"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "chrono",
- "rmp-serde",
- "serde",
 ]
 
 [[package]]

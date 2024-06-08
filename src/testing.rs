@@ -33,7 +33,9 @@ impl Plugin for AutoplayTestPlugin {
 fn playback_recording(
     mut ev_load_play: EventWriter<LoadFromFileAndPlay>,
     filename: Res<TestSessionFilename>,
+    mut _time: ResMut<Time<Virtual>>,
 ) {
+    // time.set_relative_speed(10.0); // TODO: Make this configurable
     ev_load_play.send(LoadFromFileAndPlay(filename.0.clone()));
 }
 

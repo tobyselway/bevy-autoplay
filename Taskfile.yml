@@ -8,25 +8,25 @@ tasks:
   run:
     desc: Run the game in dev mode
     cmds:
-      - cargo run --features bevy/dynamic_linking
+      - cargo run --example main --features bevy/dynamic_linking
     silent: true
   run-release:
     desc: Run the game in release mode
     cmds:
-      - cargo run --release
+      - cargo run --example main --release
     silent: true
   build-dev:
     desc: Build the game in dev mode
     cmds:
-      - cargo build --features bevy/dynamic_linking
+      - cargo build --example main --features bevy/dynamic_linking
     silent: true
   build-release:
     desc: Build the game in release mode
     cmds:
-      - cargo build --release
+      - cargo build --example main --release
     silent: true
   test:
     desc: Run tests
     cmds:
-      - cargo test
+      - cargo test --example main
     silent: true
