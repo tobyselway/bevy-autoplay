@@ -14,6 +14,7 @@ mod record;
 mod save;
 mod session;
 mod storable;
+pub mod testing;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
 pub enum AutoplayState {

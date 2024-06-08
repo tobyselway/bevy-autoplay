@@ -1,7 +1,8 @@
 use std::{
     error,
-    fs::File,
+    fs::{create_dir_all, File},
     io::{BufReader, Write},
+    path::Path,
 };
 
 use bevy::{log::info, prelude::*};
@@ -17,6 +18,9 @@ impl Storable for Session {
     fn save(&self, filename: &str) -> Result<(), Box<dyn error::Error>> {
         let mut buf = Vec::new();
         self.serialize(&mut Serializer::new(&mut buf))?;
+        let path = Path::new(filename);
+        let prefix = path.parent().unwrap();
+        create_dir_all(prefix)?;
         let mut file = File::create(filename)?;
         file.write_all(&buf)?;
         Ok(())

@@ -1,5 +1,6 @@
 use autoplay::{AutoplayPlugin, AutoplaySet, AutoplayState, LoadFromFileAndPlay, SaveToFile};
 use bevy::prelude::*;
+use chrono::Utc;
 
 mod autoplay;
 fn main() {
@@ -12,7 +13,10 @@ fn main() {
 }
 
 fn after_recording(mut ev_save: EventWriter<SaveToFile>) {
-    ev_save.send(SaveToFile("recording1.gsi".into()));
+    ev_save.send(SaveToFile(format!(
+        "sessions/{}.gsi",
+        Utc::now().timestamp_millis()
+    )));
 }
 
 fn toggle_record(
@@ -55,4 +59,34 @@ fn log_inputs(keyboard_input: Res<ButtonInput<KeyCode>>) {
         return;
     }
     info!("Keyboard input: {:?}", keyboard_input);
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::{
+        app::{App, Update},
+        prelude::*,
+    };
+
+    use crate::autoplay::{
+        testing::{AutoplayTestPlugin, TestResult},
+        AutoplaySet,
+    };
+
+    #[test]
+    fn player_must_press_f_key() {
+        fn f_pressed(
+            mut result: EventWriter<TestResult>,
+            keyboard_input: Res<ButtonInput<KeyCode>>,
+        ) {
+            if keyboard_input.just_pressed(KeyCode::KeyF) {
+                result.send(TestResult::Success);
+            }
+        }
+
+        App::new()
+            .add_plugins(AutoplayTestPlugin("sessions/1717878890687.gsi".into()))
+            .add_systems(Update, f_pressed.after(AutoplaySet))
+            .run();
+    }
 }

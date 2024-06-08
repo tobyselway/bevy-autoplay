@@ -25,3 +25,8 @@ tasks:
     cmds:
       - cargo build --release
     silent: true
+  test:
+    desc: Run tests
+    cmds:
+      - cargo test
+    silent: true
