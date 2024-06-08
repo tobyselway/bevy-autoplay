@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use bevy::{
     app::{App, Plugin, Update},
+    input::InputSystem,
     prelude::*,
 };
 use play::{play, start_playing, stop_playing};
@@ -28,7 +29,7 @@ pub enum AutoplayState {
 struct StartTime(pub Duration);
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AutoplaySet;
+pub struct AutoplaySystem;
 
 #[derive(Event)]
 pub struct SaveToFile(pub String);
@@ -58,13 +59,14 @@ impl Plugin for AutoplayPlugin {
                 (save_recording, load_recording, load_recording_and_play),
             )
             .add_systems(
-                Update,
+                PreUpdate,
                 (
                     record.run_if(in_state(AutoplayState::Recording)),
                     play.run_if(in_state(AutoplayState::Playing)),
                 )
                     .chain()
-                    .in_set(AutoplaySet),
+                    .after(InputSystem)
+                    .in_set(AutoplaySystem),
             );
     }
 }

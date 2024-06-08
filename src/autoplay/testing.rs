@@ -5,7 +5,7 @@ use bevy::{
     MinimalPlugins,
 };
 
-use super::{AutoplayPlugin, AutoplaySet, LoadFromFileAndPlay};
+use super::{AutoplayPlugin, LoadFromFileAndPlay};
 
 #[derive(Resource)]
 struct TestSessionFilename(String);
@@ -26,7 +26,7 @@ impl Plugin for AutoplayTestPlugin {
             .insert_resource(TestSessionFilename(self.0.clone()))
             .add_event::<TestResult>()
             .add_systems(Startup, playback_recording)
-            .add_systems(Update, check_for_result.after(AutoplaySet));
+            .add_systems(Update, check_for_result);
     }
 }
 

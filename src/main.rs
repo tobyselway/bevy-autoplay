@@ -1,13 +1,18 @@
-use autoplay::{AutoplayPlugin, AutoplaySet, AutoplayState, LoadFromFileAndPlay, SaveToFile};
-use bevy::prelude::*;
+use autoplay::{AutoplayPlugin, AutoplayState, AutoplaySystem, LoadFromFileAndPlay, SaveToFile};
+use bevy::{input::InputSystem, prelude::*};
 use chrono::Utc;
 
 mod autoplay;
 fn main() {
     App::new()
         .add_plugins((DefaultPlugins, AutoplayPlugin))
-        .add_systems(Update, (toggle_record, toggle_play).before(AutoplaySet))
-        .add_systems(Update, log_inputs.after(AutoplaySet))
+        .add_systems(
+            PreUpdate,
+            (toggle_record, toggle_play)
+                .before(AutoplaySystem)
+                .after(InputSystem),
+        )
+        .add_systems(Update, log_inputs)
         .add_systems(OnExit(AutoplayState::Recording), after_recording)
         .run();
 }
@@ -68,10 +73,7 @@ mod tests {
         prelude::*,
     };
 
-    use crate::autoplay::{
-        testing::{AutoplayTestPlugin, TestResult},
-        AutoplaySet,
-    };
+    use crate::autoplay::testing::{AutoplayTestPlugin, TestResult};
 
     #[test]
     fn player_must_press_f_key() {
@@ -86,7 +88,7 @@ mod tests {
 
         App::new()
             .add_plugins(AutoplayTestPlugin("sessions/1717878890687.gsi".into()))
-            .add_systems(Update, f_pressed.after(AutoplaySet))
+            .add_systems(Update, f_pressed)
             .run();
     }
 }
