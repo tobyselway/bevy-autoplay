@@ -2,16 +2,10 @@ use bevy::prelude::*;
 
 use super::{
     session::{ButtonEvent, Session},
-    storable::Storable,
     AutoplayState, StartTime,
 };
 
-pub fn start_playing(
-    mut session: ResMut<Session>,
-    time: Res<Time<Virtual>>,
-    mut start_time: ResMut<StartTime>,
-) {
-    session.load("recording1.gsi").unwrap();
+pub fn start_playing(time: Res<Time<Virtual>>, mut start_time: ResMut<StartTime>) {
     start_time.0 = time.elapsed();
     info!("Started playing");
 }

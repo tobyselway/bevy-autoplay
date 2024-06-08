@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use super::{
     session::{InputLog, Session},
-    storable::Storable,
     StartTime,
 };
 
@@ -32,7 +31,6 @@ pub fn record(
     session.push_back(key_event);
 }
 
-pub fn stop_recording(session: Res<Session>) {
+pub fn stop_recording() {
     info!("Stopped recording");
-    session.save("recording1.gsi").unwrap();
 }

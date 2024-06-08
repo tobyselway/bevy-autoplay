@@ -1,17 +1,7 @@
-use std::{
-    collections::VecDeque,
-    error,
-    fs::File,
-    hash::Hash,
-    io::{BufReader, Write},
-    time::Duration,
-};
+use std::{collections::VecDeque, hash::Hash, time::Duration};
 
 use bevy::prelude::*;
-use rmp_serde::Serializer;
 use serde::{Deserialize, Serialize};
-
-use super::storable::Storable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ButtonEvent<T> {
@@ -77,22 +67,5 @@ impl Session {
 
     pub fn front(&self) -> Option<&InputLog<KeyCode>> {
         self.key_inputs.front()
-    }
-}
-
-impl Storable for Session {
-    fn save(&self, filename: &str) -> Result<(), Box<dyn error::Error>> {
-        let mut buf = Vec::new();
-        self.serialize(&mut Serializer::new(&mut buf))?;
-        let mut file = File::create(filename)?;
-        file.write_all(&buf)?;
-        Ok(())
-    }
-
-    fn load(&mut self, filename: &str) -> Result<(), Box<dyn error::Error>> {
-        let file = File::open(filename)?;
-        let reader = BufReader::new(file);
-        *self = rmp_serde::from_read(reader)?;
-        Ok(())
     }
 }
