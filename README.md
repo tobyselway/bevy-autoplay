@@ -1,5 +1,7 @@
 # bevy-autoplay
 
+![crates.io](https://img.shields.io/crates/v/bevy-autoplay.svg)
+
 Automated integration testing based on recorded play-testing sessions.
 
 ## Recording Sessions
