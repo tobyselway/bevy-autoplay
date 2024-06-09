@@ -2,9 +2,17 @@
 name = "bevy-autoplay"
 version = "0.1.0"
 edition = "2021"
+description = "Automated integration testing based on recorded play-testing sessions"
 repository = "https://github.com/tobyselway/bevy-autoplay/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
+keywords = [
+    "integration-testing",
+    "game-development",
+    "playtesting",
+    "bevy",
+    "bevy-engine",
+]
 
 [dependencies]
 bevy = { version = "0.13.2", features = ["serialize"] }
